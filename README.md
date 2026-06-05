@@ -1,4 +1,4 @@
-# 🍳 FlavorFind — Recipe Finder App
+# 🍳Cookmate — Recipe Finder App
 
 A full-stack web application to discover recipes by ingredients, with user authentication and bookmarking.
 
