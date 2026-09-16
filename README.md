@@ -157,25 +157,6 @@ recipe-app/
 | GET | `/api/ingredients` | Get all ingredients |
 | GET | `/api/ingredients/search?query=` | Search ingredients |
 
----
-
-## 🍽 Sample Recipes Included
-
-| Recipe | Cuisine | Calories |
-|--------|---------|----------|
-| Spaghetti Bolognese | Italian | 520 |
-| Butter Chicken | Indian | 480 |
-| Avocado Toast with Eggs | American | 320 |
-| Chicken & Vegetable Stir Fry | Chinese | 310 |
-| Red Lentil Soup | Middle Eastern | 280 |
-| Paneer Tikka Masala | Indian | 420 |
-| Classic Greek Salad | Greek | 220 |
-| Power Oatmeal Bowl | American | 350 |
-| Pan-Seared Salmon with Quinoa | American | 490 |
-| Coconut Tofu Curry | Thai | 360 |
-
----
-
 ## 🔧 Troubleshooting
 
 **"Access denied" on MySQL:**
