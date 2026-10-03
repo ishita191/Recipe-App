@@ -45,7 +45,7 @@ export default function RegisterPage() {
         <input id="name" name="name" type="text" autoComplete="name" required value={form.name} onChange={onChange}/>
         <label htmlFor="email">Email</label>
         <input id="email" name="email" type="email" autoComplete="email" required value={form.email} onChange={onChange}/>
-        <label htmlFor="password">Password</label> 
+        <labelhtmlFor="password">Password</label> 
         <input id="password" name="password" type="password" autoComplete="new-password" required value={form.password} onChange={onChange}/>
         <button className="btn btn-primary btn-lg" disabled={loading}>{loading ? 'Creating account…' : 'Create Account'}</button>
       </form>
