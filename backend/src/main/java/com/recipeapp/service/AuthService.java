@@ -9,7 +9,7 @@ import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
+import org.springframework.security.authentication.BadCredentialsException;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -19,15 +19,30 @@ public class AuthService {
     private final AuthenticationManager authManager;
     private final JwtUtils jwtUtils;
 
-    public JwtResponse login(LoginRequest request) {
-        Authentication auth = authManager.authenticate(
-            new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
-        );
-        String token = jwtUtils.generateToken(auth);
-        User user = userRepository.findByUsername(request.getUsername()).orElseThrow();
-        return new JwtResponse(token, user.getId(), user.getUsername(), user.getEmail(), user.getFullName());
-    }
 
+    public JwtResponse login(LoginRequest request) {
+
+        User user = userRepository.findByEmail(request.getUsername())
+                .orElseThrow(() ->
+                        new BadCredentialsException("Invalid email or password"));
+
+        Authentication auth = authManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        user.getUsername(),
+                        request.getPassword()
+                )
+        );
+
+        String token = jwtUtils.generateToken(auth);
+
+        return new JwtResponse(
+                token,
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getFullName()
+        );
+    }
     public MessageResponse register(RegisterRequest request) {
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("Username already taken");
@@ -44,4 +59,5 @@ public class AuthService {
         userRepository.save(user);
         return new MessageResponse("User registered successfully");
     }
+
 }

@@ -1,83 +1,53 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { toast } from 'react-toastify';
-
+import AuthShell from '../components/AuthShell';
 export default function RegisterPage() {
-  const [form, setForm] = useState({ username: '', email: '', password: '', fullName: '' });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+  const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const onSubmit = async (e) => {
     e.preventDefault();
-    setError(''); setLoading(true);
+    setError('');
+    if (form.password.length < 6) {
+      setError('Use at least 6 characters for your password.');
+      return;
+    }
+    setLoading(true);
     try {
-      await register(form);
-      toast.success('Account created! Please sign in.');
-      navigate('/login');
+    await register({
+  username: form.name.trim(),
+  email: form.email.trim(),
+  password: form.password,
+  fullName: form.name.trim()
+});
+      navigate('/'); // AUTH (keep your original redirect)
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      setError(err?.response?.data?.message || 'We could not create your account. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <h2>Create account</h2>
-        <p className="subtitle">Start discovering and saving recipes</p>
-
-        {error && <div className="error-msg">{error}</div>}
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Full Name</label>
-            <input
-              type="text" placeholder="John Doe"
-              value={form.fullName}
-              onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))}
-            />
-          </div>
-          <div className="form-group">
-            <label>Username *</label>
-            <input
-              type="text" required placeholder="Choose a username" minLength={3}
-              value={form.username}
-              onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
-            />
-          </div>
-          <div className="form-group">
-            <label>Email *</label>
-            <input
-              type="email" required placeholder="you@example.com"
-              value={form.email}
-              onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-            />
-          </div>
-          <div className="form-group">
-            <label>Password *</label>
-            <input
-              type="password" required placeholder="At least 6 characters" minLength={6}
-              value={form.password}
-              onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-            />
-          </div>
-          <button
-            type="submit" className="btn btn-primary"
-            style={{ width: '100%', marginTop: 8 }}
-            disabled={loading}
-          >
-            {loading ? 'Creating account...' : 'Create Account'}
-          </button>
-        </form>
-
-        <div className="auth-footer">
-          Already have an account? <Link to="/login">Sign in</Link>
-        </div>
-      </div>
-    </div>
-  );
+  return(<AuthShell
+      title="Create your account"
+      subtitle="Save recipes and search by what is in your kitchen."
+      footer={<>Already have an account? <Link to="/login">Sign in</Link></>}>
+      <form onSubmit={onSubmit} className="form" noValidate>
+        {error && <div className="alert" role="alert">{error}</div>}
+        <label htmlFor="name">Name</label>
+        <input id="name" name="name" type="text" autoComplete="name" required value={form.name} onChange={onChange}/>
+        <label htmlFor="email">Email</label>
+        <input id="email" name="email" type="email" autoComplete="email" required value={form.email} onChange={onChange}/>
+        <label htmlFor="password">Password</label> 
+        <input id="password" name="password" type="password" autoComplete="new-password" required value={form.password} onChange={onChange}/>
+        <button className="btn btn-primary btn-lg" disabled={loading}>{loading ? 'Creating account…' : 'Create Account'}</button>
+      </form>
+    </AuthShell>);
 }

@@ -22,7 +22,6 @@ public class AuthController {
             return ResponseEntity.badRequest().body(new MessageResponse("Invalid username or password"));
         }
     }
-
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         try {

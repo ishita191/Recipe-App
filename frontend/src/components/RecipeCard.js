@@ -1,75 +1,44 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { recipeService } from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import { toast } from 'react-toastify';
+import { Link } from 'react-router-dom';
+import { Heart, Clock, Users, Gauge } from './Icons';
+import { getImage, getTotal, minutes, isSaved } from '../utils/recipeFields';
 
-export default function RecipeCard({ recipe, onBookmarkToggle }) {
-  const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
 
-  const difficultyClass = `badge badge-difficulty-${recipe.difficulty?.toLowerCase() || 'easy'}`;
-
-  const handleBookmark = async (e) => {
-    e.stopPropagation();
-    if (!isLoggedIn) {
-      toast.info('Please sign in to bookmark recipes');
-      return;
-    }
-    try {
-      const res = await recipeService.toggleBookmark(recipe.id);
-      onBookmarkToggle?.(recipe.id, res.data.bookmarked);
-      toast.success(res.data.bookmarked ? '📌 Bookmarked!' : 'Bookmark removed');
-    } catch {
-      toast.error('Failed to update bookmark');
-    }
-  };
+export default function RecipeCard({ recipe, onBookmark, bookmarked }) {
+  if (!recipe) return null;
+  const saved = bookmarked ?? isSaved(recipe);
+  const img = getImage(recipe);
+  const total = minutes(getTotal(recipe));
 
   return (
-    <div className="recipe-card" onClick={() => navigate(`/recipe/${recipe.id}`)}>
-      <div className="recipe-card-img">
-        <img
-          src={recipe.imageUrl || `https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=600`}
-          alt={recipe.name}
-          onError={e => { e.target.src = 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=600'; }}
-        />
-        <div className="card-badges">
-          {recipe.cuisine && <span className="badge badge-cuisine">{recipe.cuisine}</span>}
-          {recipe.difficulty && <span className={difficultyClass}>{recipe.difficulty}</span>}
-        </div>
-        <button
-          className={`bookmark-btn ${recipe.bookmarked ? 'active' : ''}`}
-          onClick={handleBookmark}
-          title={recipe.bookmarked ? 'Remove bookmark' : 'Bookmark'}
-        >
-          {recipe.bookmarked ? '🔖' : '🔖'}
-        </button>
-      </div>
-      <div className="recipe-card-body">
-        <h3>{recipe.name}</h3>
-        <p>{recipe.description}</p>
-        <div className="recipe-meta">
-          {recipe.prepTime && <span>⏱ {recipe.prepTime + (recipe.cookTime || 0)} min</span>}
-          {recipe.servings && <span>🍽 {recipe.servings} servings</span>}
-          {recipe.category && <span>🏷 {recipe.category}</span>}
-        </div>
-        {(recipe.caloriesPerServing || recipe.proteinPerServing || recipe.fiberPerServing) && (
-          <div className="nutrition-bar">
-            <div className="nutrition-item">
-              <div className="val">{recipe.caloriesPerServing || '—'}</div>
-              <div className="lbl">Calories</div>
-            </div>
-            <div className="nutrition-item">
-              <div className="val">{recipe.proteinPerServing ? `${recipe.proteinPerServing}g` : '—'}</div>
-              <div className="lbl">Protein</div>
-            </div>
-            <div className="nutrition-item">
-              <div className="val">{recipe.fiberPerServing ? `${recipe.fiberPerServing}g` : '—'}</div>
-              <div className="lbl">Fiber</div>
-            </div>
-          </div>
+    <article className="recipe-card">
+      <div className="card-media">
+        <Link to={`/recipe/${recipe.id}`} tabIndex={-1} aria-hidden="true">
+          {img ? <img src={recipe.imageUrl} alt={recipe.name} loading="lazy" /> : <div className="img-fallback"/>}    
+        </Link>
+        {onBookmark && (
+          <button
+            className={`bookmark-btn ${saved ? 'is-saved' : ''}`}
+            aria-label={saved ? 'Remove from saved recipes' : 'Save recipe'}
+            aria-pressed={saved}
+            onClick={() => onBookmark(recipe)}
+          >
+            <Heart filled={saved} />
+          </button>
         )}
+        {recipe.category && <span className="tag">{recipe.category}</span>}
       </div>
-    </div>
+
+      <Link to={`/recipe/${recipe.id}`} className="card-body">
+        <h3>{recipe.name || recipe.title}</h3>
+        {recipe.description && <p className="card-desc">{recipe.description}</p>}
+        <ul className="meta">
+          {total && <li><Clock width={15} height={15} />{total}</li>}
+          {recipe.servings && <li><Users width={15} height={15} />{recipe.servings} servings</li>}
+          {recipe.difficulty && <li><Gauge width={15} height={15} />{recipe.difficulty}</li>}
+        </ul>
+        {recipe.cuisine && <span className="cuisine">{recipe.cuisine}</span>}
+      </Link>
+    </article>
   );
 }

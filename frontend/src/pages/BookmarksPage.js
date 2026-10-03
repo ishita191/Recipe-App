@@ -1,54 +1,58 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { recipeService } from '../services/api';
 import RecipeCard from '../components/RecipeCard';
+import { Heart } from '../components/Icons';
+import { toList } from '../utils/recipeFields';
 
+// Route protection stays in App.js (unchanged).
 export default function BookmarksPage() {
-  const [bookmarks, setBookmarks] = useState([]);
+  const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    recipeService.getBookmarks()
-      .then(res => setBookmarks(res.data))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    let active = true;
+    recipeService.getBookmarks() // API
+      .then((res) => active && setRecipes(toList(res)))
+      .catch(() => active && setError('We could not load your saved recipes. Please try again.'))
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
   }, []);
 
-  const handleBookmarkToggle = (recipeId, isBookmarked) => {
-    if (!isBookmarked) setBookmarks(prev => prev.filter(r => r.id !== recipeId));
+  const handleRemove = async (recipe) => {
+    try {
+      await recipeService.toggleBookmark(recipe.id); // API
+      setRecipes((prev) => prev.filter((r) => r.id !== recipe.id));
+    } catch (e) {
+      setError('Could not remove this recipe. Please try again.');
+    }
   };
 
   return (
-    <div className="section">
-      <div className="container">
-        <div className="section-header">
-          <h2>📌 Saved Recipes</h2>
-          <Link to="/" className="btn btn-ghost btn-sm">Browse More</Link>
-        </div>
-
-        {loading ? (
-          <div className="loading"><div className="spinner" /><span>Loading your bookmarks...</span></div>
-        ) : bookmarks.length === 0 ? (
-          <div className="empty-state">
-            <div className="icon">📌</div>
-            <h3>No saved recipes yet</h3>
-            <p>Browse recipes and click the bookmark icon to save your favourites</p>
-            <Link to="/" className="btn btn-primary" style={{ marginTop: 24, display: 'inline-flex' }}>
-              Discover Recipes
-            </Link>
-          </div>
-        ) : (
-          <div className="recipe-grid">
-            {bookmarks.map(recipe => (
-              <RecipeCard
-                key={recipe.id}
-                recipe={{ ...recipe, bookmarked: true }}
-                onBookmarkToggle={handleBookmarkToggle}
-              />
-            ))}
-          </div>
-        )}
+    <main className="container results page-top">
+      <div className="section-head">
+        <h1 className="page-title"><Heart filled width={28} height={28} className="title-heart" /> Saved Recipes</h1>
+        {!loading && recipes.length > 0 && <span className="count">{recipes.length} saved</span>}
       </div>
-    </div>
+
+      {error && <div className="state state-error" role="alert"><p>{error}</p></div>}
+
+      {loading && <div className="grid" aria-busy="true">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="skeleton-card" />)}</div>}
+
+      {!loading && recipes.length === 0 && !error && (
+        <div className="state">
+          <h3>Nothing saved yet</h3>
+          <p>Tap the heart on any recipe to keep it here.</p>
+          <Link to="/" className="btn btn-primary">Browse recipes</Link>
+        </div>
+      )}
+
+      {!loading && recipes.length > 0 && (
+        <div className="grid">
+          {recipes.map((r) => <RecipeCard key={r.id} recipe={r} bookmarked onBookmark={handleRemove} />)}
+        </div>
+      )}
+    </main>
   );
 }

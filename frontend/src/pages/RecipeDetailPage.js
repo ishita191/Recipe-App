@@ -1,142 +1,137 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { recipeService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { toast } from 'react-toastify';
+import { Back, Clock, Users, Gauge, Heart } from '../components/Icons';
+import {
+  unwrap, getImage, getPrep, getCook, getIngredients, getSteps, minutes, isSaved,
+} from '../utils/recipeFields';
 
 export default function RecipeDetailPage() {
   const { id } = useParams();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
   const [recipe, setRecipe] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    recipeService.getById(id)
-      .then(res => setRecipe(res.data))
-      .catch(() => navigate('/'))
-      .finally(() => setLoading(false));
-  }, [id, navigate]);
+    let active = true;
+    setLoading(true);
+    setError('');
+    recipeService.getById(id) // API
+      .then((res) => {
+        if (!active) return;
+        const data = unwrap(res);
+        setRecipe(data);
+        setSaved(isSaved(data));
+      })
+      .catch(() => active && setError('We could not load this recipe. It may have been removed.'))
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, [id]);
 
-  const handleBookmark = async () => {
-    if (!isLoggedIn) { toast.info('Please sign in to bookmark recipes'); return; }
+  const handleSave = async () => {
+    if (!user) return navigate('/login');
     try {
-      const res = await recipeService.toggleBookmark(recipe.id);
-      setRecipe(r => ({ ...r, bookmarked: res.data.bookmarked }));
-      toast.success(res.data.bookmarked ? '📌 Bookmarked!' : 'Bookmark removed');
-    } catch { toast.error('Failed to update bookmark'); }
+      await recipeService.toggleBookmark(id); // API
+      setSaved((s) => !s);
+    } catch (e) {
+      setError('Could not update your saved recipes. Please try again.');
+    }
   };
 
-  if (loading) return <div className="loading"><div className="spinner" /><span>Loading recipe...</span></div>;
-  if (!recipe) return null;
+  if (loading) return <main className="container detail"><div className="skeleton-card tall" aria-busy="true" /></main>;
 
-  const totalTime = (recipe.prepTime || 0) + (recipe.cookTime || 0);
+  if (!recipe) {
+    return (
+      <main className="container detail">
+        <div className="state state-error" role="alert">
+          <h3>Recipe unavailable</h3>
+          <p>{error}</p>
+          <Link to="/" className="btn btn-primary">Back to recipes</Link>
+        </div>
+      </main>
+    );
+  }
+
+  const img = getImage(recipe);
+  const ingredients = getIngredients(recipe);
+  const steps = getSteps(recipe);
+  const facts = [
+    { icon: <Clock width={18} height={18} />, label: 'Prep', value: minutes(getPrep(recipe)) },
+    { icon: <Clock width={18} height={18} />, label: 'Cook', value: minutes(getCook(recipe)) },
+    { icon: <Users width={18} height={18} />, label: 'Servings', value: recipe.servings },
+    { icon: <Gauge width={18} height={18} />, label: 'Difficulty', value: recipe.difficulty },
+  ].filter((f) => f.value);
+  const nutrition = recipe.nutrition || recipe.nutritionInfo;
 
   return (
-    <div className="recipe-detail">
-      <Link to="/" className="back-btn">← Back to Recipes</Link>
+    <main className="container detail">
+      <Link to="/" className="back-link"><Back width={18} height={18} /> Back to recipes</Link>
+      {error && <div className="state state-error" role="alert"><p>{error}</p></div>}
 
-      <div className="recipe-detail-hero">
-        <img
-          src={recipe.imageUrl || 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=900'}
-          alt={recipe.name}
-          onError={e => { e.target.src = 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=900'; }}
-        />
-        <div className="recipe-detail-hero-overlay">
-          <h1>{recipe.name}</h1>
-          <div className="meta">
-            {recipe.cuisine && <span>🌍 {recipe.cuisine}</span>}
-            {recipe.category && <span>🏷 {recipe.category}</span>}
-            {totalTime > 0 && <span>⏱ {totalTime} min total</span>}
-            {recipe.servings && <span>🍽 {recipe.servings} servings</span>}
-            {recipe.difficulty && <span>📊 {recipe.difficulty}</span>}
+      <div className="detail-grid">
+        <div className="detail-media">{img ? <img src={img} alt={recipe.name || recipe.title} /> : <div className="img-fallback" />}</div>
+
+        <div className="detail-head">
+          <div className="tags">
+            {recipe.cuisine && <span className="pill">{recipe.cuisine}</span>}
+            {recipe.category && <span className="pill pill-soft">{recipe.category}</span>}
           </div>
+          <h1>{recipe.name || recipe.title}</h1>
+          {recipe.description && <p className="lead">{recipe.description}</p>}
+
+          {facts.length > 0 && (
+            <dl className="facts">
+              {facts.map((f) => (
+                <div key={f.label}><dt>{f.icon}{f.label}</dt><dd>{f.value}</dd></div>
+              ))}
+            </dl>
+          )}
+
+          <button className={`btn btn-lg ${saved ? 'btn-soft' : 'btn-primary'}`} onClick={handleSave} aria-pressed={saved}>
+            <Heart filled={saved} width={18} height={18} /> {saved ? 'Saved' : 'Save Recipe'}
+          </button>
         </div>
       </div>
 
-      {/* Actions */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 28 }}>
-        <button
-          className={`btn ${recipe.bookmarked ? 'btn-primary' : 'btn-outline'}`}
-          onClick={handleBookmark}
-        >
-          {recipe.bookmarked ? '🔖 Saved' : '🔖 Save Recipe'}
-        </button>
+      <div className="detail-body">
+        {ingredients.length > 0 && (
+          <section className="panel">
+            <h2>Ingredients</h2>
+            <ul className="ingredient-list">
+              {ingredients.map((i, idx) => (
+                <li key={`${i.name}-${idx}`}>
+                  <span>{i.name}</span>
+                  <span className="qty">{[i.quantity, i.unit].filter(Boolean).join(' ')}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {steps.length > 0 && (
+          <section className="panel">
+            <h2>Instructions</h2>
+            <ol className="steps">
+              {steps.map((s, idx) => <li key={idx}>{s}</li>)}
+            </ol>
+          </section>
+        )}
+
+        {nutrition && typeof nutrition === 'object' && Object.keys(nutrition).length > 0 && (
+          <section className="panel">
+            <h2>Nutrition</h2>
+            <dl className="nutrition">
+              {Object.entries(nutrition).filter(([, v]) => v !== null && v !== '').map(([k, v]) => (
+                <div key={k}><dt>{k.replace(/([A-Z])/g, ' $1')}</dt><dd>{String(v)}</dd></div>
+              ))}
+            </dl>
+          </section>
+        )}
       </div>
-
-      {/* Description */}
-      {recipe.description && (
-        <p style={{ fontSize: 16, color: 'var(--warm-gray)', lineHeight: 1.7, marginBottom: 28 }}>
-          {recipe.description}
-        </p>
-      )}
-
-      {/* Nutrition */}
-      {(recipe.caloriesPerServing || recipe.proteinPerServing) && (
-        <div style={{ marginBottom: 36 }}>
-          <h2 style={{ marginBottom: 16, fontSize: 22 }}>Nutrition per serving</h2>
-          <div className="nutrition-grid">
-            <div className="nutrition-card">
-              <div className="value">{recipe.caloriesPerServing || '—'}</div>
-              <div className="label">🔥 Calories</div>
-            </div>
-            <div className="nutrition-card">
-              <div className="value">{recipe.proteinPerServing ? `${recipe.proteinPerServing}g` : '—'}</div>
-              <div className="label">💪 Protein</div>
-            </div>
-            <div className="nutrition-card">
-              <div className="value">{recipe.fiberPerServing ? `${recipe.fiberPerServing}g` : '—'}</div>
-              <div className="label">🌾 Fiber</div>
-            </div>
-            <div className="nutrition-card">
-              <div className="value">{recipe.carbsPerServing ? `${recipe.carbsPerServing}g` : '—'}</div>
-              <div className="label">🍞 Carbs</div>
-            </div>
-            <div className="nutrition-card">
-              <div className="value">{recipe.fatPerServing ? `${recipe.fatPerServing}g` : '—'}</div>
-              <div className="label">🥑 Fat</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Ingredients */}
-      {recipe.ingredients?.length > 0 && (
-        <div style={{ marginBottom: 36 }}>
-          <h2 style={{ marginBottom: 16, fontSize: 22 }}>
-            Ingredients
-            <span style={{ fontSize: 14, fontFamily: 'DM Sans', fontWeight: 400, color: 'var(--warm-gray)', marginLeft: 12 }}>
-              for {recipe.servings} servings
-            </span>
-          </h2>
-          <ul className="ingredients-list">
-            {recipe.ingredients.map((ing, i) => (
-              <li key={i}>
-                <span style={{ fontWeight: 600 }}>
-                  {ing.quantity} {ing.unit}
-                </span>
-                <span>{ing.ingredientName}</span>
-                {ing.optional && <span style={{ fontSize: 12, color: 'var(--warm-gray)', marginLeft: 'auto' }}>(optional)</span>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Steps */}
-      {recipe.steps?.length > 0 && (
-        <div>
-          <h2 style={{ marginBottom: 20, fontSize: 22 }}>Instructions</h2>
-          <ol className="steps-list">
-            {recipe.steps.map((step) => (
-              <li key={step.stepNumber} className="step-item">
-                <div className="step-num">{step.stepNumber}</div>
-                <div className="step-text">{step.instruction}</div>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
-    </div>
+    </main>
   );
 }

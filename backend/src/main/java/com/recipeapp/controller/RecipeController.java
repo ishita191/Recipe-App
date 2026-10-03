@@ -61,4 +61,9 @@ public class RecipeController {
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(recipeService.getBookmarkedRecipes(userDetails.getUsername()));
     }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteRecipe(@PathVariable Long id) {
+        recipeService.deleteRecipe(id);
+        return ResponseEntity.noContent().build();
+    }
 }

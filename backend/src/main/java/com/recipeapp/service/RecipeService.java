@@ -123,4 +123,7 @@ public class RecipeService {
 
         return dto;
     }
+    public void deleteRecipe(Long id) {
+        recipeRepository.deleteById(id);
+    }
 }

@@ -1,182 +1,222 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { recipeService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import RecipeCard from '../components/RecipeCard';
+import { SearchIcon, Plus, Close } from '../components/Icons';
+import { toList, getImage, isSaved } from '../utils/recipeFields';
 
-const CUISINES = ['All', 'Italian', 'Indian', 'Chinese', 'American', 'Greek', 'Thai', 'Middle Eastern'];
-const CATEGORIES = ['All', 'Breakfast', 'Lunch', 'Dinner', 'Snack', 'Dessert'];
-
+/*
+  ADAPT (service method names): this page assumes
+    recipeService.getAll()                       -> GET /recipes
+    recipeService.search(query)                  -> GET /recipes/search?query=...
+    recipeService.searchByIngredients(csv)       -> GET /recipes/search/ingredients?ingredients=a,b
+    recipeService.toggleBookmark(id)             -> POST /recipes/{id}/bookmark
+  If your api.js names differ, change only the four calls marked  // API.
+*/
 export default function HomePage() {
-  const [recipes, setRecipes] = useState([]);
-  const [filtered, setFiltered] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [ingredientInput, setIngredientInput] = useState('');
-  const [selectedIngredients, setSelectedIngredients] = useState([]);
-  const [activeCuisine, setActiveCuisine] = useState('All');
-  const [activeCategory, setActiveCategory] = useState('All');
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
-  const loadRecipes = useCallback(async () => {
+  const [recipes, setRecipes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [query, setQuery] = useState('');
+  const [ingredientInput, setIngredientInput] = useState('');
+  const [ingredients, setIngredients] = useState([]);
+  const [cuisine, setCuisine] = useState('');
+  const [category, setCategory] = useState('');
+  const [savedIds, setSavedIds] = useState(() => new Set());
+
+  const load = useCallback(async (request) => {
     setLoading(true);
+    setError('');
     try {
-      const res = await recipeService.getAll();
-      setRecipes(res.data);
-      setFiltered(res.data);
-    } catch {
-      console.error('Failed to load recipes');
+      const res = await request();
+      const list = toList(res);
+      setRecipes(list);
+      setSavedIds(new Set(list.filter(isSaved).map((r) => r.id)));
+    } catch (e) {
+      setError(e?.response?.data?.message || 'We could not load recipes. Check your connection and try again.');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => { loadRecipes(); }, [loadRecipes]);
-
   useEffect(() => {
-    let result = [...recipes];
-    if (activeCuisine !== 'All') result = result.filter(r => r.cuisine === activeCuisine);
-    if (activeCategory !== 'All') result = result.filter(r => r.category === activeCategory);
-    setFiltered(result);
-  }, [activeCuisine, activeCategory, recipes]);
-
-  const handleTextSearch = async (e) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) { setFiltered(recipes); return; }
-    setLoading(true);
-    try {
-      const res = await recipeService.search(searchQuery);
-      setFiltered(res.data);
-      setActiveCuisine('All'); setActiveCategory('All');
-    } catch { } finally { setLoading(false); }
-  };
+    load(() => recipeService.getAll()); // API
+  }, [load]);
 
   const addIngredient = () => {
-    const val = ingredientInput.trim();
-    if (val && !selectedIngredients.includes(val)) {
-      setSelectedIngredients(prev => [...prev, val]);
-    }
+    const parts = ingredientInput.split(',').map((s) => s.trim()).filter(Boolean);
+    if (!parts.length) return;
+    setIngredients((prev) => [...new Set([...prev, ...parts])]);
     setIngredientInput('');
   };
 
-  const removeIngredient = (ing) => {
-    setSelectedIngredients(prev => prev.filter(i => i !== ing));
+  const removeIngredient = (name) => setIngredients((prev) => prev.filter((i) => i !== name));
+
+  const handleSearch = (e) => {
+    e?.preventDefault();
+    const pending = ingredientInput.split(',').map((s) => s.trim()).filter(Boolean);
+    const all = [...new Set([...ingredients, ...pending])];
+    setIngredients(all);
+    setIngredientInput('');
+
+    if (all.length) load(() => recipeService.searchByIngredients(all.join(','))); // API
+    else if (query.trim()) load(() => recipeService.search(query.trim())); // API
+    else load(() => recipeService.getAll()); // API
+    document.getElementById('recipes')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const searchByIngredients = async () => {
-    if (!selectedIngredients.length) return;
-    setLoading(true);
+  const hasFilters = Boolean(query || ingredients.length || cuisine || category);
+
+  const clearFilters = () => {
+    setQuery('');
+    setIngredients([]);
+    setIngredientInput('');
+    setCuisine('');
+    setCategory('');
+    load(() => recipeService.getAll()); // API
+  };
+
+  const handleBookmark = async (recipe) => {
+    if (!user) return navigate('/login');
     try {
-      const res = await recipeService.searchByIngredients(selectedIngredients);
-      setFiltered(res.data);
-      setActiveCuisine('All'); setActiveCategory('All');
-    } catch { } finally { setLoading(false); }
+      await recipeService.toggleBookmark(recipe.id); // API
+      setSavedIds((prev) => {
+        const next = new Set(prev);
+        next.has(recipe.id) ? next.delete(recipe.id) : next.add(recipe.id);
+        return next;
+      });
+    } catch (e) {
+      setError('Could not update your saved recipes. Please try again.');
+    }
   };
 
-  const clearSearch = () => {
-    setSearchQuery(''); setSelectedIngredients([]);
-    setActiveCuisine('All'); setActiveCategory('All');
-    setFiltered(recipes);
-  };
+  // Filter options come from the loaded recipes, so nothing is hardcoded.
+  const cuisines = useMemo(() => [...new Set(recipes.map((r) => r.cuisine).filter(Boolean))].sort(), [recipes]);
+  const categories = useMemo(() => [...new Set(recipes.map((r) => r.category).filter(Boolean))].sort(), [recipes]);
 
-  const handleBookmarkToggle = (recipeId, isBookmarked) => {
-    const update = list => list.map(r => r.id === recipeId ? { ...r, bookmarked: isBookmarked } : r);
-    setRecipes(update);
-    setFiltered(update);
-  };
-
+  const visible = recipes.filter(
+    (r) => (!cuisine || r.cuisine === cuisine) && (!category || r.category === category)
+  );
+  const heroImage =
+  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-5H4YY5yoN0FCMf5dX9iFqotP4omMFzp6dSv4jeIQMP0cYt4jiOQxUaSk&s=10";
   return (
-    <div>
-      {/* Hero */}
+    <main>
       <section className="hero">
-        <h1>Find recipes with<br /><em>what you have</em></h1>
-        <p>Search by ingredients,cuisine, or dish name. Discover meals tailored to your kitchen.</p>
+        <div className="container hero-grid">
+          <div className="hero-copy">
+            <h1>Crave It. Find It. Cook It.</h1>
+            <p className="lead">Explore tasty recipes for every craving and every occasion.</p>
 
-        {/* Text search */}
-        <form className="search-bar" onSubmit={handleTextSearch} style={{ marginBottom: 32 }}>
-          <input
-            type="text" placeholder="Search by recipe name or keyword..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-          <button type="submit">Search</button>
-        </form>
+            <form className="search-panel" onSubmit={handleSearch}>
+              <label className="field">
+                <SearchIcon />
+                <input
+                  type="search"
+                  placeholder="Search recipes by name"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  aria-label="Search recipes by name"
+                />
+              </label>
 
-        {/* Ingredient search */}
-        <div className="ingredient-search-area">
-          <h3>Or search by ingredients</h3>
-          <div className="ingredient-tags">
-            {selectedIngredients.map(ing => (
-              <span key={ing} className="tag">
-                {ing}
-                <button onClick={() => removeIngredient(ing)}>×</button>
-              </span>
+              <div className="field-row">
+                <label className="field">
+                  <input
+                    type="text"
+                    placeholder="Add an ingredient"
+                    value={ingredientInput}
+                    onChange={(e) => setIngredientInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addIngredient();
+                      }
+                    }}
+                    aria-label="Add an ingredient"
+                  />
+                </label>
+                <button type="button" className="btn btn-soft" onClick={addIngredient}>
+                  <Plus width={16} height={16} /> Add
+                </button>
+              </div>
+
+              {ingredients.length > 0 && (
+                <ul className="chips" aria-label="Selected ingredients">
+                  {ingredients.map((name) => (
+                    <li key={name} className="chip">
+                      {name}
+                      <button type="button" aria-label={`Remove ${name}`} onClick={() => removeIngredient(name)}>
+                        <Close width={14} height={14} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="filter-row">
+                <select value={cuisine} onChange={(e) => setCuisine(e.target.value)} aria-label="Filter by cuisine">
+                  <option value="">All cuisines</option>
+                  {cuisines.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <select value={category} onChange={(e) => setCategory(e.target.value)} aria-label="Filter by category">
+                  <option value="">All categories</option>
+                  {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+                {hasFilters && (
+                  <button type="button" className="btn btn-ghost" onClick={clearFilters}>Clear filters</button>
+                )}
+              </div>
+
+              <button type="submit" className="btn btn-primary btn-lg">Find Recipes</button>
+            </form>
+          </div>
+
+          <div className="hero-media" aria-hidden="true">
+            {heroImage ? <img src={heroImage} alt="" /> : <div className="hero-placeholder" />}
+          </div>
+        </div>
+      </section>
+
+      <section id="recipes" className="container results">
+        <div className="section-head">
+          <h2>{hasFilters ? 'Search results' : 'Popular recipes'}</h2>
+          {!loading && !error && <span className="count">{visible.length} {visible.length === 1 ? 'recipe' : 'recipes'}</span>}
+        </div>
+
+        {error && (
+          <div className="state state-error" role="alert">
+            <h3>Something went wrong</h3>
+            <p>{error}</p>
+            <button className="btn btn-primary" onClick={clearFilters}>Try again</button>
+          </div>
+        )}
+
+        {loading && (
+          <div className="grid" aria-busy="true">
+            {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton-card" />)}
+          </div>
+        )}
+
+        {!loading && !error && visible.length === 0 && (
+          <div className="state">
+            <h3>No recipes match yet</h3>
+            <p>Try fewer ingredients or a different cuisine.</p>
+            <button className="btn btn-primary" onClick={clearFilters}>Clear filters</button>
+          </div>
+        )}
+
+        {!loading && !error && visible.length > 0 && (
+          <div className="grid">
+            {visible.map((r) => (
+              <RecipeCard key={r.id} recipe={r} bookmarked={savedIds.has(r.id)} onBookmark={handleBookmark} />
             ))}
           </div>
-          <div className="ingredient-input-row">
-            <input
-              type="text" placeholder="Add ingredient (e.g. chicken, tomatoes, rice)..."
-              value={ingredientInput}
-              onChange={e => setIngredientInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addIngredient())}
-            />
-            <button className="btn btn-ghost btn-sm" onClick={addIngredient}>Add</button>
-            {selectedIngredients.length > 0 && (
-              <button className="btn btn-primary btn-sm" onClick={searchByIngredients}>
-                Find Recipes
-              </button>
-            )}
-          </div>
-        </div>
+        )}
       </section>
-
-      {/* Results */}
-      <section className="section" style={{ paddingTop: 0 }}>
-        <div className="container">
-          {/* Cuisine Filter */}
-          <div style={{ marginBottom: 12 }}>
-            <div className="filters-row">
-              {CUISINES.map(c => (
-                <button
-                  key={c} className={`filter-chip ${activeCuisine === c ? 'active' : ''}`}
-                  onClick={() => setActiveCuisine(c)}
-                >{c}</button>
-              ))}
-            </div>
-            <div className="filters-row">
-              {CATEGORIES.map(c => (
-                <button
-                  key={c} className={`filter-chip ${activeCategory === c ? 'active' : ''}`}
-                  onClick={() => setActiveCategory(c)}
-                >{c}</button>
-              ))}
-            </div>
-          </div>
-
-          <div className="section-header" style={{ marginBottom: 20 }}>
-            <h2>{filtered.length} Recipe{filtered.length !== 1 ? 's' : ''}</h2>
-            {(searchQuery || selectedIngredients.length > 0 || activeCuisine !== 'All' || activeCategory !== 'All') && (
-              <button className="btn btn-ghost btn-sm" onClick={clearSearch}>Clear filters</button>
-            )}
-          </div>
-
-          {loading ? (
-            <div className="loading"><div className="spinner" /><span>Finding recipes...</span></div>
-          ) : filtered.length === 0 ? (
-            <div className="empty-state">
-              <div className="icon">🥘</div>
-              <h3>No recipes found</h3>
-              <p>Try different ingredients or search terms</p>
-            </div>
-          ) : (
-            <div className="recipe-grid">
-              {filtered.map(recipe => (
-                <RecipeCard
-                  key={recipe.id} recipe={recipe}
-                  onBookmarkToggle={handleBookmarkToggle}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-    </div>
+    </main>
   );
 }
