@@ -4,7 +4,7 @@ import { recipeService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import RecipeCard from '../components/RecipeCard';
 import { SearchIcon, Plus, Close } from '../components/Icons';
-import { toList, getImage, isSaved } from '../utils/recipeFields';
+import { toList, isSaved } from '../utils/recipeFields';
 
 export default function HomePage() {
   const { user } = useAuth();
