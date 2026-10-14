@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
+import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class RecipeService {
@@ -17,12 +17,16 @@ public class RecipeService {
     private final RecipeRepository recipeRepository;
     private final UserRepository userRepository;
 
+    @Transactional(readOnly = true)
     public List<RecipeDto> getAllRecipes(String username) {
         List<Recipe> recipes = recipeRepository.findAll();
-        Set<Long> bookmarkedIds = getBookmarkedIds(username);
-        return recipes.stream().map(r -> toDto(r, bookmarkedIds)).collect(Collectors.toList());
-    }
 
+        Set<Long> bookmarkedIds = getBookmarkedIds(username);
+
+        return recipes.stream()
+                .map(recipe -> toDto(recipe, bookmarkedIds))
+                .collect(Collectors.toList());
+    }
     public RecipeDto getRecipeById(Long id, String username) {
         Recipe recipe = recipeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Recipe not found"));
