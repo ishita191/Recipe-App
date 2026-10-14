@@ -6,14 +6,6 @@ import RecipeCard from '../components/RecipeCard';
 import { SearchIcon, Plus, Close } from '../components/Icons';
 import { toList, getImage, isSaved } from '../utils/recipeFields';
 
-/*
-  ADAPT (service method names): this page assumes
-    recipeService.getAll()                       -> GET /recipes
-    recipeService.search(query)                  -> GET /recipes/search?query=...
-    recipeService.searchByIngredients(csv)       -> GET /recipes/search/ingredients?ingredients=a,b
-    recipeService.toggleBookmark(id)             -> POST /recipes/{id}/bookmark
-  If your api.js names differ, change only the four calls marked  // API.
-*/
 export default function HomePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
