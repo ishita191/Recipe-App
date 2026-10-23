@@ -3,15 +3,16 @@ package com.recipeapp.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.util.List;
-
+import lombok.Getter;
+import lombok.Setter;
 @Entity
 @Table(name = "recipes")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Recipe {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

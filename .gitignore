@@ -1,5 +1,6 @@
 # Java / Spring Boot
 backend/target/
+**/target/
 backend/.idea/
 backend/.vscode/
 backend/hs_err_pid*.log
@@ -13,3 +14,6 @@ frontend/dist/
 .env
 .env.*
 !.env.example
+# Java compiled files
+*.class
+

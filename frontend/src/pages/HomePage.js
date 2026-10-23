@@ -187,11 +187,14 @@ const load = useCallback(async (request) => {
               <button type="submit" className="btn btn-primary btn-lg">Find Recipes</button>
             </form>
           </div>
-
-          <div className="hero-media" aria-hidden="true">
-            {heroImage ? < img src={heroImage} alt="" /> : <div className="hero-placeholder" />}
-          </div>
-        </div>
+<div className="hero-media" aria-hidden="true">
+  {heroImage ? (
+    <img src={heroImage} alt="" loading="eager" />
+  ) : (
+    <div className="hero-placeholder" />
+  )}
+</div>
+</div>
       </section>
 
       <section id="recipes" className="container results">
@@ -208,19 +211,30 @@ const load = useCallback(async (request) => {
           </div>
         )}
 
-{loading && recipes.length === 0 && (
-  <div className="grid" aria-busy="true">
-    {Array.from({ length: 6 }).map((_, i) => (
-      <div key={i} className="skeleton-card" />
-    ))}
-  </div>
-)}
 
-{loading && recipes.length > 0 && (
-  <p role="status" aria-live="polite">
-    Updating recipes...
-  </p>
-)}
+        {!loading && !error && visible.length === 0 && (
+          <div className="state">
+            <h3>No recipes match yet</h3>
+            <p>Try fewer ingredients or a different cuisine.</p>
+            <button className="btn btn-primary" onClick={clearFilters}>
+              Clear filters
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && visible.length > 0 && (
+          <div className="grid">
+            {visible.map((r) => (
+              <RecipeCard
+                key={r.id}
+                recipe={r}
+                bookmarked={savedIds.has(r.id)}
+                onBookmark={handleBookmark}
+              />
+            ))}
+          </div>
+        )}
+
       </section>
     </main>
   );
