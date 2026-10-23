@@ -114,10 +114,16 @@ search: async (query) => {
   const externalRecipes = await searchExternalRecipes(query);
   return { data: externalRecipes };
 },
-  searchByIngredients: (ingredients) =>
-    api.get(`/recipes/search/ingredients?ingredients=${ingredients.join(',')}`),
-  toggleBookmark: (id) => api.post(`/recipes/${id}/bookmark`),
-  getBookmarks: () => api.get('/recipes/bookmarks'),
+
+  searchByIngredients: (ingredients) => {
+  const value = Array.isArray(ingredients)
+    ? ingredients.join(',')
+    : ingredients;
+
+  return api.get('/recipes/search/ingredients', {
+    params: { ingredients: value },
+  });
+},
 };
 
 export const ingredientService = {

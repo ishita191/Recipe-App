@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { recipeService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -19,21 +25,36 @@ export default function HomePage() {
   const [cuisine, setCuisine] = useState('');
   const [category, setCategory] = useState('');
   const [savedIds, setSavedIds] = useState(() => new Set());
+const requestId = useRef(0);
 
-  const load = useCallback(async (request) => {
-    setLoading(true);
-    setError('');
-    try {
-      const res = await request();
-      const list = toList(res);
-      setRecipes(list);
-      setSavedIds(new Set(list.filter(isSaved).map((r) => r.id)));
-    } catch (e) {
-      setError(e?.response?.data?.message || 'We could not load recipes. Check your connection and try again.');
-    } finally {
+const load = useCallback(async (request) => {
+  const currentRequest = ++requestId.current;
+
+  setLoading(true);
+  setError('');
+
+  try {
+    const res = await request();
+
+    // Ignore outdated responses
+    if (currentRequest !== requestId.current) return;
+
+    const list = toList(res);
+    setRecipes(list);
+    setSavedIds(new Set(list.filter(isSaved).map((r) => r.id)));
+  } catch (e) {
+    if (currentRequest !== requestId.current) return;
+
+    setError(
+      e?.response?.data?.message ||
+      'We could not load recipes. Please try again.'
+    );
+  } finally {
+    if (currentRequest === requestId.current) {
       setLoading(false);
     }
-  }, []);
+  }
+}, []);
 
   useEffect(() => {
     load(() => recipeService.getAll()); // API
@@ -168,7 +189,7 @@ export default function HomePage() {
           </div>
 
           <div className="hero-media" aria-hidden="true">
-            {heroImage ? <img src={heroImage} alt="" /> : <div className="hero-placeholder" />}
+            {heroImage ? < img src={heroImage} alt="" /> : <div className="hero-placeholder" />}
           </div>
         </div>
       </section>
@@ -187,27 +208,19 @@ export default function HomePage() {
           </div>
         )}
 
-        {loading && (
-          <div className="grid" aria-busy="true">
-            {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton-card" />)}
-          </div>
-        )}
+{loading && recipes.length === 0 && (
+  <div className="grid" aria-busy="true">
+    {Array.from({ length: 6 }).map((_, i) => (
+      <div key={i} className="skeleton-card" />
+    ))}
+  </div>
+)}
 
-        {!loading && !error && visible.length === 0 && (
-          <div className="state">
-            <h3>No recipes match yet</h3>
-            <p>Try fewer ingredients or a different cuisine.</p>
-            <button className="btn btn-primary" onClick={clearFilters}>Clear filters</button>
-          </div>
-        )}
-
-        {!loading && !error && visible.length > 0 && (
-          <div className="grid">
-            {visible.map((r) => (
-              <RecipeCard key={r.id} recipe={r} bookmarked={savedIds.has(r.id)} onBookmark={handleBookmark} />
-            ))}
-          </div>
-        )}
+{loading && recipes.length > 0 && (
+  <p role="status" aria-live="polite">
+    Updating recipes...
+  </p>
+)}
       </section>
     </main>
   );
