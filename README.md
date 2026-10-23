@@ -4,10 +4,7 @@
 
 Cookmate is a full-stack web application that helps users explore recipes, search by recipe name or available ingredients, filter results, and bookmark their favourite dishes. It combines a React frontend with a Spring Boot REST API, MySQL database, and JWT-based authentication.
 
-## 🌐 Live Demo
-
-- **Frontend:** https://recipe-app-jpif.vercel.app/
-- **Backend API:** https://recipe-app-vtzp.onrender.com/
+## 🌐 Live Demo : https://recipe-app-jpif.vercel.app/
 - **GitHub Repository:** https://github.com/ishita191/Recipe-App
 
 > Note: The backend is an API, so opening its base URL directly in a browser may not display a webpage. The frontend communicates with the backend through REST endpoints.
