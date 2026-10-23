@@ -1,69 +1,159 @@
-# 🍳Cookmate — Recipe Finder App
+# 🍳 Cookmate — Full-Stack Recipe Finder
 
-A full-stack web application to discover recipes by ingredients, with user authentication and bookmarking.
+**Discover recipes. Find meals by ingredients. Save your favourites.**
 
-**Stack:** React 18 · Spring Boot 3.2 · MySQL 8 · JWT Auth
+Cookmate is a full-stack web application that helps users explore recipes, search by recipe name or available ingredients, filter results, and bookmark their favourite dishes. It combines a React frontend with a Spring Boot REST API, MySQL database, and JWT-based authentication.
 
----
+## 🌐 Live Demo
+
+- **Frontend:** https://recipe-app-jpif.vercel.app/
+- **Backend API:** https://recipe-app-vtzp.onrender.com/
+- **GitHub Repository:** https://github.com/ishita191/Recipe-App
+
+> Note: The backend is an API, so opening its base URL directly in a browser may not display a webpage. The frontend communicates with the backend through REST endpoints.
 
 ## ✨ Features
 
-- 🔍 **Search by ingredients** — add multiple ingredients, get matching recipes
-- 📝 **Keyword search** — search by recipe name or description
-- 🏷 **Filter by cuisine & category** — Italian, Indian, Chinese, etc.
-- 📊 **Nutrition info** — calories, protein, fiber, carbs, and fat per serving
-- 🔐 **User auth** — register/login with JWT tokens
-- 📌 **Bookmarks** — save favourite recipes (login required)
-- 🌱 **Auto-seeded data** — 10 sample recipes loaded on first run
+- 🔍 **Ingredient-Based Search** — Find recipes using multiple ingredients.
+- 📝 **Keyword Search** — Search recipes by name or description.
+- 🏷️ **Cuisine & Category Filters** — Narrow results using available cuisine and category options.
+- 🔐 **User Authentication** — Register and log in using JWT-based authentication.
+- 📌 **Recipe Bookmarks** — Save and manage favourite recipes after logging in.
+- 📖 **Recipe Details** — View recipe information, ingredients, and cooking steps.
+- 🔗 **REST API Integration** — Connect the React frontend with the Spring Boot backend.
+- 📱 **Responsive Interface** — Browse recipes through a user-friendly web interface.
 
----
+## 🛠️ Tech Stack
 
-## 🚀 Quick Start
+| Layer | Technologies |
+|---|---|
+| Frontend | React 18, JavaScript, HTML, CSS |
+| Backend | Java, Spring Boot 3.x, Spring Web |
+| Database | MySQL 8 |
+| ORM | Spring Data JPA, Hibernate |
+| Authentication | Spring Security, JWT |
+| API Communication | REST APIs, Axios |
+| Build Tools | Maven, npm |
+| Version Control | Git, GitHub |
+| Deployment | Vercel (frontend), Render (backend) |
 
-### Prerequisites
-- Java 17+
-- Node.js 16+
-- MySQL 8+
-- Maven 3.8+
+## 🏗️ Application Architecture
 
----
+```text
+             User / Browser
+                    |
+                    v
+          React Frontend (Vercel)
+                    |
+              Axios / REST API
+                    |
+                    v
+        Spring Boot Backend (Render)
+                    |
+          Spring Data JPA / Hibernate
+                    |
+                    v
+               MySQL Database
+```
 
-### 1. Database Setup
+The frontend handles the user interface and sends API requests to the Spring Boot backend. The backend processes requests, applies business logic, interacts with MySQL, and returns responses to the frontend.
 
-Open MySQL and run:
+## 📁 Project Structure
+
+```text
+Recipe-App/
+├── backend/
+│   ├── pom.xml
+│   └── src/main/
+│       ├── java/com/recipeapp/
+│       │   ├── RecipeApplication.java
+│       │   ├── config/
+│       │   │   ├── DataSeeder.java
+│       │   │   └── SecurityConfig.java
+│       │   ├── controller/
+│       │   │   ├── AuthController.java
+│       │   │   ├── RecipeController.java
+│       │   │   └── IngredientController.java
+│       │   ├── dto/
+│       │   ├── entity/
+│       │   ├── repository/
+│       │   ├── security/
+│       │   └── service/
+│       └── resources/
+│
+└── frontend/
+    ├── package.json
+    └── src/
+        ├── components/
+        ├── context/
+        ├── pages/
+        ├── services/
+        ├── utils/
+        ├── App.js
+        └── index.css
+```
+
+## ⚙️ Prerequisites
+
+Install the following before running the application locally:
+
+- Java 17 or a compatible version required by the backend configuration
+- Node.js and npm
+- MySQL 8
+- Maven 3.8+ (or the Maven Wrapper, if included in the project)
+- Git
+
+## 🚀 Getting Started
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/ishita191/Recipe-App.git
+cd Recipe-App
+```
+
+### 2. Configure MySQL
+
+Create the database in MySQL:
+
 ```sql
 CREATE DATABASE IF NOT EXISTS recipedb;
 ```
 
-> The app auto-creates tables on first run via `spring.jpa.hibernate.ddl-auto=update`
+Configure the database URL, username, and password in the backend configuration.
 
----
-
-### 2. Configure Database Credentials
-
-Edit `backend/src/main/resources/application.properties`:
+For local development, `backend/src/main/resources/application.properties` may use settings like:
 
 ```properties
-spring.datasource.username=root       # ← your MySQL username
-spring.datasource.password=root       # ← your MySQL password
+spring.datasource.url=jdbc:mysql://localhost:3306/recipedb
+spring.datasource.username=${DB_USERNAME}
+spring.datasource.password=${DB_PASSWORD}
 ```
 
----
+Make sure the property names match your actual backend configuration. Set the corresponding environment variables locally; do not commit database passwords or JWT secrets to GitHub.
 
-### 3. Run the Backend
+If your application uses Hibernate schema updates, confirm the configured `spring.jpa.hibernate.ddl-auto` setting before starting the backend.
+
+### 3. Start the Backend
+
+Open a terminal in the repository root:
 
 ```bash
 cd backend
 mvn spring-boot:run
 ```
 
-Backend starts on **http://localhost:8080**
+The backend normally runs at:
 
-The database will be auto-seeded with 10 recipes on first startup.
+```text
+http://localhost:8080
+```
 
----
+The actual port depends on your application configuration and environment variables.
 
-### 4. Run the Frontend
+### 4. Start the Frontend
+
+Open a second terminal:
 
 ```bash
 cd frontend
@@ -71,102 +161,15 @@ npm install
 npm start
 ```
 
-Frontend starts on **http://localhost:3000**
+The React development server normally opens at:
 
----
-
-## 📁 Project Structure
-
-```
-recipe-app/
-├── backend/
-│   ├── pom.xml
-│   └── src/main/java/com/recipeapp/
-│       ├── RecipeApplication.java
-│       ├── config/
-│       │   ├── DataSeeder.java        ← Seeds 10 sample recipes
-│       │   └── SecurityConfig.java
-│       ├── controller/
-│       │   ├── AuthController.java
-│       │   ├── RecipeController.java
-│       │   └── IngredientController.java
-│       ├── dto/
-│       │   ├── AuthDto.java
-│       │   └── RecipeDto.java
-│       ├── entity/
-│       │   ├── User.java
-│       │   ├── Recipe.java
-│       │   ├── Ingredient.java
-│       │   ├── RecipeIngredient.java
-│       │   └── RecipeStep.java
-│       ├── repository/
-│       │   ├── UserRepository.java
-│       │   ├── RecipeRepository.java
-│       │   └── IngredientRepository.java
-│       ├── security/
-│       │   ├── JwtUtils.java
-│       │   └── JwtAuthFilter.java
-│       └── service/
-│           ├── AuthService.java
-│           ├── RecipeService.java
-│           └── UserDetailsServiceImpl.java
-│
-└── frontend/
-    ├── package.json
-    └── src/
-        ├── App.js
-        ├── index.css
-        ├── context/
-        │   └── AuthContext.js
-        ├── services/
-        │   └── api.js
-        ├── components/
-        │   ├── Navbar.js
-        │   └── RecipeCard.js
-        └── pages/
-            ├── HomePage.js
-            ├── RecipeDetailPage.js
-            ├── LoginPage.js
-            ├── RegisterPage.js
-            └── BookmarksPage.js
+```text
+http://localhost:3000
 ```
 
----
+Ensure the frontend API base URL points to the local backend when testing locally, or to the deployed backend when using the production website.
 
-## 🔌 API Endpoints
+## 🔌 REST API Endpoints
 
-### Auth
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register new user |
-| POST | `/api/auth/login` | Login, returns JWT |
-
-### Recipes
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/recipes` | Get all recipes |
-| GET | `/api/recipes/{id}` | Get recipe by ID |
-| GET | `/api/recipes/search?query=` | Search by name/description |
-| GET | `/api/recipes/search/ingredients?ingredients=` | Search by ingredients (comma-separated) |
-| POST | `/api/recipes/{id}/bookmark` | Toggle bookmark (auth required) |
-| GET | `/api/recipes/bookmarks` | Get user's bookmarked recipes (auth required) |
-
-### Ingredients
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/ingredients` | Get all ingredients |
-| GET | `/api/ingredients/search?query=` | Search ingredients |
-
-## 🔧 Troubleshooting
-
-**"Access denied" on MySQL:**
-```sql
-GRANT ALL PRIVILEGES ON recipedb.* TO 'root'@'localhost';
-FLUSH PRIVILEGES;
-```
-
-**Port 8080 in use:**
-Change `server.port=8081` in `application.properties` and update `"proxy"` in `frontend/package.json`.
-
-**CORS issues:**
+The following endpoints reflect the application's recipe and
 Ensure `app.cors.allowed-origins=http://localhost:3000` matches your frontend URL.
