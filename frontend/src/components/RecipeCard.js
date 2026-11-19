@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Clock, Users, Gauge } from './Icons';
@@ -19,16 +18,16 @@ export default function RecipeCard({ recipe, onBookmark, bookmarked }) {
   return (
     <article className="recipe-card">
       <div className="card-media">
-        <Link
-          to={`/recipe/${recipe.id}`}
-          tabIndex={-1}
-          aria-hidden="true"
-        >
+        <Link to={`/recipe/${recipe.id}`} tabIndex={-1} aria-hidden="true">
           {img ? (
             <img
               src={img}
               alt={recipe.name || recipe.title || 'Recipe'}
               loading="lazy"
+              onError={(e) => {
+                e.target.src =
+                  'https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&w=600&q=80';
+              }}
             />
           ) : (
             <div className="img-fallback" />
@@ -39,27 +38,25 @@ export default function RecipeCard({ recipe, onBookmark, bookmarked }) {
           <button
             type="button"
             className={`bookmark-btn ${saved ? 'is-saved' : ''}`}
-            aria-label={
-              saved ? 'Remove from saved recipes' : 'Save recipe'
-            }
+            aria-label={saved ? 'Remove from saved recipes' : 'Save recipe'}
             aria-pressed={saved}
-            onClick={() => onBookmark(recipe)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onBookmark(recipe);
+            }}
           >
             <Heart filled={saved} />
           </button>
         )}
 
-        {recipe.category && (
-          <span className="tag">{recipe.category}</span>
-        )}
+        {recipe.category && <span className="tag">{recipe.category}</span>}
       </div>
 
       <Link to={`/recipe/${recipe.id}`} className="card-body">
         <h3>{recipe.name || recipe.title}</h3>
 
-        {recipe.description && (
-          <p className="card-desc">{recipe.description}</p>
-        )}
+        {recipe.description && <p className="card-desc">{recipe.description}</p>}
 
         <ul className="meta">
           {total && (
@@ -84,9 +81,7 @@ export default function RecipeCard({ recipe, onBookmark, bookmarked }) {
           )}
         </ul>
 
-        {recipe.cuisine && (
-          <span className="cuisine">{recipe.cuisine}</span>
-        )}
+        {recipe.cuisine && <span className="cuisine">{recipe.cuisine}</span>}
       </Link>
     </article>
   );

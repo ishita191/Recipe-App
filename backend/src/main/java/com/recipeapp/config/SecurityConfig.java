@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -70,13 +71,15 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/recipes/**").permitAll()
-                .requestMatchers("/api/ingredients/**").permitAll()
-                .anyRequest().authenticated()
-            )
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        // Inside your SecurityFilterChain / configure method:
+        http
+                .authorizeHttpRequests(auth -> auth
+                        // Allow anyone to view recipes without signing in
+                        .requestMatchers(HttpMethod.GET, "/api/recipes/**", "/api/recipe/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
+                        // Require login only for bookmarking or profile
+                        .anyRequest().authenticated())
             .authenticationProvider(authProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

@@ -16,32 +16,63 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
+
     try {
-    await login({
-  username: form.email.trim(),
-  password: form.password
-});
+      await login({
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+      });
+
       navigate('/');
     } catch (err) {
-      setError(err?.response?.data?.message || 'Incorrect email or password. Please try again.');
+      setError(
+        err?.response?.data?.message ||
+        'Incorrect email or password. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <AuthShell
       title="Welcome back"
-      subtitle="Sign in to see your saved recipes."
-      footer={<>New to CookMate? <Link to="/register">Create an account</Link></>}
+      subtitle="Sign in to access your saved recipes and meal plans."
+      footer={
+        <>
+          New to CookMate? <Link to="/register">Create an account</Link>
+        </>
+      }
     >
-      <form onSubmit={onSubmit} className="form" noValidate>
-        {error && <div className="alert" role="alert">{error}</div>}
-        <label htmlFor="email">Email</label>
-        <input id="email" name="email" type="email" autoComplete="off" required value={form.email} onChange={onChange} />
-        <label htmlFor="password">Password</label>
-        <input id="password" name="password" type="password" autoComplete="new-password" required value={form.password} onChange={onChange} />
-        <button className="btn btn-primary btn-lg" disabled={loading}>{loading ? 'Signing in…' : 'Sign In'}</button>
+      <form onSubmit={onSubmit} className="auth-form" noValidate>
+        {error && <div className="alert-error" role="alert">{error}</div>}
+        <div className="form-group">
+          <label htmlFor="email">Email or Username</label>
+          <input
+            id="email"
+            name="email"
+            type="text"
+            required
+            autoComplete="off"
+            value={form.email}
+            onChange={onChange}
+            placeholder="you@example.com"
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="password">Password</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            required
+            value={form.password}
+            onChange={onChange}
+            placeholder="••••••••"
+          />
+        </div>
+        <button className="btn btn-primary btn-lg btn-block" disabled={loading}>
+          {loading ? 'Signing in…' : 'Sign In'}
+        </button>
       </form>
     </AuthShell>
   );

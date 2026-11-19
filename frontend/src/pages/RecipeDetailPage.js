@@ -4,7 +4,14 @@ import { recipeService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Back, Clock, Users, Gauge, Heart } from '../components/Icons';
 import {
-  unwrap, getImage, getPrep, getCook, getIngredients, getSteps, minutes, isSaved,
+  unwrap,
+  getImage,
+  getPrep,
+  getCook,
+  getIngredients,
+  getSteps,
+  minutes,
+  isSaved,
 } from '../utils/recipeFields';
 
 export default function RecipeDetailPage() {
@@ -20,7 +27,8 @@ export default function RecipeDetailPage() {
     let active = true;
     setLoading(true);
     setError('');
-    recipeService.getById(id) // API
+    recipeService
+      .getById(id)
       .then((res) => {
         if (!active) return;
         const data = unwrap(res);
@@ -29,28 +37,38 @@ export default function RecipeDetailPage() {
       })
       .catch(() => active && setError('We could not load this recipe. It may have been removed.'))
       .finally(() => active && setLoading(false));
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   const handleSave = async () => {
     if (!user) return navigate('/login');
     try {
-      await recipeService.toggleBookmark(id); // API
+      await recipeService.toggleBookmark(id);
       setSaved((s) => !s);
     } catch (e) {
       setError('Could not update your saved recipes. Please try again.');
     }
   };
 
-  if (loading) return <main className="container detail"><div className="skeleton-card tall" aria-busy="true" /></main>;
+  if (loading) {
+    return (
+      <main className="container detail page-top">
+        <div className="skeleton-card tall" aria-busy="true" />
+      </main>
+    );
+  }
 
   if (!recipe) {
     return (
-      <main className="container detail">
-        <div className="state state-error" role="alert">
+      <main className="container detail page-top">
+        <div className="status-state state-error" role="alert">
           <h3>Recipe unavailable</h3>
           <p>{error}</p>
-          <Link to="/" className="btn btn-primary">Back to recipes</Link>
+          <Link to="/" className="btn btn-primary">
+            Back to recipes
+          </Link>
         </div>
       </main>
     );
@@ -68,12 +86,25 @@ export default function RecipeDetailPage() {
   const nutrition = recipe.nutrition || recipe.nutritionInfo;
 
   return (
-    <main className="container detail">
-      <Link to="/" className="back-link"><Back width={18} height={18} /> Back to recipes</Link>
-      {error && <div className="state state-error" role="alert"><p>{error}</p></div>}
+    <main className="container detail page-top">
+      <Link to="/" className="back-link">
+        <Back width={18} height={18} /> Back to recipes
+      </Link>
+
+      {error && (
+        <div className="status-state state-error" role="alert">
+          <p>{error}</p>
+        </div>
+      )}
 
       <div className="detail-grid">
-        <div className="detail-media">{img ? <img src={img} alt={recipe.name || recipe.title} /> : <div className="img-fallback" />}</div>
+        <div className="detail-media">
+          {img ? (
+            <img src={img} alt={recipe.name || recipe.title} />
+          ) : (
+            <div className="img-fallback" />
+          )}
+        </div>
 
         <div className="detail-head">
           <div className="tags">
@@ -86,12 +117,21 @@ export default function RecipeDetailPage() {
           {facts.length > 0 && (
             <dl className="facts">
               {facts.map((f) => (
-                <div key={f.label}><dt>{f.icon}{f.label}</dt><dd>{f.value}</dd></div>
+                <div key={f.label}>
+                  <dt>
+                    {f.icon} {f.label}
+                  </dt>
+                  <dd>{f.value}</dd>
+                </div>
               ))}
             </dl>
           )}
 
-          <button className={`btn btn-lg ${saved ? 'btn-soft' : 'btn-primary'}`} onClick={handleSave} aria-pressed={saved}>
+          <button
+            className={`btn btn-lg ${saved ? 'btn-soft' : 'btn-primary'}`}
+            onClick={handleSave}
+            aria-pressed={saved}
+          >
             <Heart filled={saved} width={18} height={18} /> {saved ? 'Saved' : 'Save Recipe'}
           </button>
         </div>
@@ -116,7 +156,9 @@ export default function RecipeDetailPage() {
           <section className="panel">
             <h2>Instructions</h2>
             <ol className="steps">
-              {steps.map((s, idx) => <li key={idx}>{s}</li>)}
+              {steps.map((s, idx) => (
+                <li key={idx}>{s}</li>
+              ))}
             </ol>
           </section>
         )}
@@ -125,9 +167,14 @@ export default function RecipeDetailPage() {
           <section className="panel">
             <h2>Nutrition</h2>
             <dl className="nutrition">
-              {Object.entries(nutrition).filter(([, v]) => v !== null && v !== '').map(([k, v]) => (
-                <div key={k}><dt>{k.replace(/([A-Z])/g, ' $1')}</dt><dd>{String(v)}</dd></div>
-              ))}
+              {Object.entries(nutrition)
+                .filter(([, v]) => v !== null && v !== '')
+                .map(([k, v]) => (
+                  <div key={k}>
+                    <dt>{k.replace(/([A-Z])/g, ' $1')}</dt>
+                    <dd>{String(v)}</dd>
+                  </div>
+                ))}
             </dl>
           </section>
         )}

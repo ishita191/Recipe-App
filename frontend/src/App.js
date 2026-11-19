@@ -6,6 +6,7 @@ import './index.css';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer'; // <--- NEW FOOTER IMPORT
 import HomePage from './pages/HomePage';
 import RecipeDetailPage from './pages/RecipeDetailPage';
 import LoginPage from './pages/LoginPage';
@@ -14,7 +15,7 @@ import BookmarksPage from './pages/BookmarksPage';
 
 const ProtectedRoute = ({ children }) => {
   const { isLoggedIn, loading } = useAuth();
-  if (loading) return <div className="loading"><div className="spinner"/></div>;
+  if (loading) return <div className="loading-spinner" />;
   return isLoggedIn ? children : <Navigate to="/login" />;
 };
 
@@ -27,15 +28,21 @@ function AppRoutes() {
         <Route path="/recipe/:id" element={<RecipeDetailPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/bookmarks" element={
-          <ProtectedRoute><BookmarksPage /></ProtectedRoute>
-        } />
+        <Route
+          path="/bookmarks"
+          element={
+            <ProtectedRoute>
+              <BookmarksPage />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
+      <Footer /> {/* <--- FOOTER RENDERED AT THE BOTTOM */}
     </>
   );
 }
 
-function App() {
+export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
@@ -45,5 +52,3 @@ function App() {
     </BrowserRouter>
   );
 }
-
-export default App;

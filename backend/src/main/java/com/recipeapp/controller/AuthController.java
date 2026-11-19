@@ -19,7 +19,10 @@ public class AuthController {
         try {
             return ResponseEntity.ok(authService.login(request));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Invalid username or password"));
+            e.printStackTrace();
+            System.err.println(" ACTUAL LOGIN ERROR: " + e.getMessage());
+
+            return ResponseEntity.badRequest().body(new MessageResponse("Login error: " + e.getMessage()));
         }
     }
     @PostMapping("/register")

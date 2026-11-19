@@ -9,8 +9,8 @@ public class AuthDto {
 
     @Data
     public static class LoginRequest {
-        @NotBlank
-        private String username;
+        @NotBlank @Email
+        private String email;
         @NotBlank
         private String password;
     }
@@ -20,7 +20,7 @@ public class AuthDto {
         @NotBlank @Size(min = 3, max = 50)
         private String username;
         @NotBlank @Email
-        private String email;
+         private String email;
         @NotBlank @Size(min = 6, max = 100)
         private String password;
         private String fullName;

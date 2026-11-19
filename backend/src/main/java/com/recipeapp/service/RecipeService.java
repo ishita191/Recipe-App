@@ -67,7 +67,7 @@ public class RecipeService {
         return Map.of("bookmarked", isBookmarked, "recipeId", recipeId);
     }
 
-    public List<RecipeDto> getBookmarkedRecipes(String username) {
+    public  List<RecipeDto> getBookmarkedRecipes(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         Set<Long> bookmarkedIds = user.getBookmarkedRecipes().stream()
@@ -85,7 +85,7 @@ public class RecipeService {
                 .orElse(Collections.emptySet());
     }
 
-    private RecipeDto toDto(Recipe recipe, Set<Long> bookmarkedIds) {
+    private static RecipeDto toDto(Recipe recipe, Set<Long> bookmarkedIds) {
         RecipeDto dto = new RecipeDto();
         dto.setId(recipe.getId());
         dto.setName(recipe.getName());
@@ -127,7 +127,6 @@ public class RecipeService {
 
         return dto;
     }
-    public void deleteRecipe(Long id) {
-        recipeRepository.deleteById(id);
-    }
+
+
 }

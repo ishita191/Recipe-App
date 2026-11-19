@@ -1,6 +1,7 @@
 package com.recipeapp.controller;
 
 import com.recipeapp.dto.RecipeDto;
+
 import com.recipeapp.service.RecipeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,7 @@ public class RecipeController {
         return ResponseEntity.ok(recipeService.getRecipeById(id, username));
     }
 
+
     @GetMapping("/search/ingredients")
     public ResponseEntity<List<RecipeDto>> searchByIngredients(
             @RequestParam List<String> ingredients,
@@ -50,10 +52,12 @@ public class RecipeController {
     }
 
     @PostMapping("/{id}/bookmark")
-    public ResponseEntity<Map<String, Object>> toggleBookmark(
+    public ResponseEntity<?> toggleBookmark(
             @PathVariable Long id,
             @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(recipeService.toggleBookmark(id, userDetails.getUsername()));
+        String username = userDetails != null ? userDetails.getUsername() : "default_user";
+        recipeService.toggleBookmark(id, username);
+        return ResponseEntity.ok(Map.of("message", "Bookmark updated"));
     }
 
     @GetMapping("/bookmarks")
@@ -61,9 +65,10 @@ public class RecipeController {
             @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(recipeService.getBookmarkedRecipes(userDetails.getUsername()));
     }
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRecipe(@PathVariable Long id) {
-        recipeService.deleteRecipe(id);
-        return ResponseEntity.noContent().build();
-    }
+//@GetMapping("/saved")
+//    public ResponseEntity<List<RecipeDto>> getSavedRecipes(
+//            @AuthenticationPrincipal UserDetails userDetails) {
+//       // String username = userDetails != null ? userDetails.getUsername() : "default_user";
+//        return ResponseEntity.ok(recipeService.getUserBookmarks(userDetails.getUsername()));
+//    }
 }
