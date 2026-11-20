@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Pointing to your local Spring Boot backend
-const API_BASE = 'http://localhost:8080/api';
+const API_BASE = 'https://recipe-app-vtzp.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -42,9 +42,6 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-/* =======================================================
-   EXTERNAL MEAL DB ADAPTER (Fallback when not in local DB)
-   ======================================================= */
 const MEAL_DB_URL = 'https://www.themealdb.com/api/json/v1/1';
 
 function mapExternalMeal(meal) {
