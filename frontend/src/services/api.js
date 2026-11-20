@@ -2,7 +2,6 @@ import axios from 'axios';
 
 // Pointing to your local Spring Boot backend
 const API_BASE = 'https://recipe-app-vtzp.onrender.com/api';
-
 const api = axios.create({
   baseURL: API_BASE,
   headers: {
